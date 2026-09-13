@@ -1,0 +1,100 @@
+Declare residency: what this repository needs done, so a host can order it
+The resident half of an arrangement that does not exist yet. **Nothing is bound, nothing starts, and
+no behaviour changes.** `residency.yml` is a new file and it is the only file.
+
+Modelled on `proofing/residency.yml`, which is the nearest precedent — a claim written before any
+host binds it, on the reasoning that a claim is easier to argue with than an intention.
+
+## Why now
+
+The Discord bot's blocker was always framed as uptime, and it turns out not to be an uptime problem.
+This project's own README already says the bot *"only needs to turn on long enough to read messages
+since its last appearance."* That is a description of a periodic job; there was simply nothing to
+say it to.
+
+There is now. `station-node/bin/services` implements `kind: periodic` — fire, work, write, exit, no
+pid between firings — which is the gap `proofing` filed a petition about. Both of this repository's
+entry points are already that shape.
+
+## The finding that made this worth writing today
+
+**`bin/refresh` is written, complete, and nothing schedules it.**
+
+`bot/refresh.py` walks every tracked category, tests each attachment with `cdn.expires_within`,
+re-fetches the originating message for a fresh signed URL, and writes `refs.json` back. It is the
+repair for the project's central decay problem and it works.
+
+`bin/daily` is `init + sync + pin`. **Refresh is not in it, and there is no other caller.** So the
+project can already fix its own link rot and only does when a person remembers.
+
+**Measured, not assumed:** a Discord CDN URL carries `ex` and `is` as hex unix seconds, and the
+difference in this repository's own committed data is exactly `86400`. Every link dies 24 hours after
+issue. That makes `bin/daily`'s natural once-a-day cadence sit precisely *on* the link lifetime with
+zero margin — any jitter and the previous run's links are already dead. `refresh` at `6h` is what
+makes a daily scan safe, which is why it is the service a host should order first.
+
+## What is declared
+
+**`wants:`** — four storage labels, as labels and never paths.
+
+| label | lifecycle | disposition | note |
+| --- | --- | --- | --- |
+| `bookmarks` | durable | private | the read markers. Cursors only advance and keys are never deleted, which is exactly why lateness is cheap and uptime was never the requirement |
+| `refs` | durable | **public** | recording the disposition it *has* — Jekyll already ships every entry into the published HTML |
+| `holdings` | durable | on-request | **does not exist yet**, and the reason residency is worth wanting |
+| `scratch` | transient | private | in-flight state |
+
+`holdings` is the interesting one. Today the bytes live in exactly two places and a person controls
+neither: a third-party pinning service, and the reader's own OPFS — origin-private, per-device,
+unexportable. A host binding this label can keep hard copies **with or without IPFS**, which demotes
+pinning from the durability story to one way of distributing it.
+
+**`serves:`** — two `periodic` services, `refresh` (6h) and `daily` (1d). Both optional, both
+`exit 0` health, neither starting because the file exists.
+
+**`peers:`** — `bottles` for holdings, `data-pile` for custody. Both optional, each with the
+mandatory `without:`.
+
+## Verified against the real reader, not just eyeballed
+
+Parsed with `station-node/bin/services`'s own `read_block`, since a residency file that the host
+cannot read is prose. All 4 `wants`, 2 `serves` and 2 `peers` rows come back correctly, and both
+cadences convert (`6h` → `StartInterval 21600`, `1d` → `86400`).
+
+**That check caught a real defect.** The first draft used multi-line *quoted* scalars — the form
+`proofing/residency.yml` uses — and the reader silently keeps only the first line, so half of every
+description was being dropped. Converted to `>` folded blocks, which it handles correctly. Worth
+knowing generally: **`proofing`'s file is subject to the same truncation right now**, and nothing
+reports it.
+
+## Three gaps named rather than papered over
+
+1. **The start commands do not run under launchd as written.** Every verb reaches `uv run
+   bin/cli.py`, `uv` is at `/usr/local/bin/uv`, and a launchd job gets
+   `PATH=/usr/bin:/bin:/usr/sbin:/sbin`. The job would fail at exec. The fix belongs in *this*
+   repository — resolve the interpreter absolutely in `bin/` rather than asking a host to repair our
+   PATH — and is deliberately **not** done in this PR, because a residency file should describe what
+   is true.
+2. **No secret is declared and one is needed.** Both services authenticate with a bot token from
+   `.env`. `needs-secret:` is left unset until somebody decides whether an unattended host should
+   hold that token at all — a different posture from a person running the same command, and the
+   operator's call.
+3. **The expiry *report* is not a service and should not become one.** Counting near-expiry
+   references is a standing concern with a constituency, and it writes a pull request rather than a
+   file. That is an advocate seat, not a job.
+
+## One way this resident is unlike the others
+
+stagecraft and proofing are each one repository in one place. **This is a template** — the README
+tells you to copy it — so `residency.yml` gets copied too, and every copy is a separate resident with
+its own guilds, cursors and holdings. The mount path disambiguates residents, which is what it is
+for; what it does not do is disambiguate two copies on *one* host, where both want `.lockers-engine`
+and the second silently loses. Named in the file. Not this file's to solve.
+
+## Deliberately not done
+
+- **Nothing is mounted and nothing is scheduled.** No host binds `.lockers-engine`.
+- **The bot is untouched.** No carving it up for parts, no wiring `refresh` into `daily` — that
+  second one is a one-line change and it is a behaviour change, so it wants its own PR and its own
+  argument.
+- **The launchd PATH fix is not included**, per gap 1.
