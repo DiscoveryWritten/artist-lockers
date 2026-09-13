@@ -1,0 +1,189 @@
+# residency.yml — what this repository asks of a host that mounts it.
+#
+# Drafted against library.anecdote.channel's RESIDENCY.md and modelled on
+# proofing/residency.yml, which is the nearest precedent: a resident half written
+# before any host binds it.
+#
+# THE NAME IS NOT DECLARED HERE. It comes from the mount path, so `.lockers-engine`
+# at a host root IS the claim and nothing can disagree with it. `resident:` below is
+# informational only.
+#
+# THE CLAIM IS A MENU, NOT A STARTUP SCRIPT. Nothing here starts because the
+# repository was mounted. A host that never wants a catalogue kept fresh starts
+# nothing and is never told off about it.
+#
+# NOTHING IS BOUND YET. No host mounts `.lockers-engine` today. This is written
+# first on purpose — a claim is easier to argue with than an intention.
+#
+# ---------------------------------------------------------------------------
+# THE ONE WAY THIS RESIDENT IS UNLIKE THE OTHERS: IT IS A TEMPLATE.
+#
+# stagecraft and proofing are each one repository in one place. The first line of
+# this project's README tells you to copy it and be detached, "which you should
+# consider a feature." So this file is copied too, and every copy is a SEPARATE
+# resident with its own guilds, its own cursors and its own holdings.
+#
+# The mount path disambiguates one resident from another, which is exactly what it
+# is for. What it does not do is disambiguate two copies on ONE host: both would
+# want `.lockers-engine` and the second one silently loses. That is a real limit,
+# it is not this file's to solve, and it is named here rather than discovered by
+# whoever runs two lockers on one machine.
+# ---------------------------------------------------------------------------
+
+version: 1
+resident: lockers           # informational; the mount path is what counts
+
+# ---------------------------------------------------------------- storage --
+#
+# Labels, not locations. The host binds `label -> path` and may put them anywhere;
+# this file never names a directory.
+#
+# Today `bookmarks` and `refs` both live in `_data/` and are COMMITTED — which is a
+# binding this repository made for itself because there was nobody to ask. It works,
+# and it is the reason the site can be rebuilt from a clone with nothing running.
+# Saying so here is not a request to move them.
+
+wants:
+  - label: bookmarks
+    holds: >
+      the read markers — per guild, per category, per channel, the message snowflake
+      each was last scanned to, plus last_sync
+    lifecycle: durable
+    disposition: private
+    # THE MOST IMPORTANT LABEL HERE, and the reason an uptime guarantee was never
+    # actually the requirement. `bot/bookmarks.py`: cursors only advance and keys
+    # are never deleted. A run that never happened costs nothing but lateness; a
+    # run that happens after a week reads a week. The bot has no state in memory
+    # worth protecting, which is precisely what makes it schedulable instead of
+    # hosted.
+
+  - label: refs
+    holds: >
+      the catalogue itself — one refs.json per category, the enumeration the site is
+      a rendering of
+    lifecycle: durable
+    disposition: public
+    # `public` because it already is: Jekyll reads it at build time and every entry
+    # ships inside the published HTML. Recording the disposition it HAS rather than
+    # one it might like is the point of the column.
+
+  - label: holdings
+    holds: >
+      hard copies of the bytes themselves — the media, kept so the catalogue can
+      claim to hold rather than only to point
+    lifecycle: durable
+    disposition: on-request
+    # DOES NOT EXIST YET, and it is the one label worth wanting residency for.
+    # Today the bytes live in exactly two places, and a person controls neither:
+    # a third-party pinning service, and the reader's own OPFS — which is
+    # origin-private, per-device and unexportable, so the most durable artifact
+    # this project produces is the one nobody can hand to anybody.
+    #
+    # A host that binds this label can keep the copies with or WITHOUT IPFS, which
+    # is the whole point: the pinning layer stops being the durability story and
+    # becomes one way to distribute it.
+
+  - label: scratch
+    holds: >
+      in-flight state — partial fetches, pin accounting, logs; anything a re-run
+      recreates
+    lifecycle: transient
+    disposition: private
+
+# ------------------------------------------------------------------ peers --
+# Per-verb, with `without:` finishing the sentence. A dependency of a verb is not
+# a dependency of a product.
+peers:
+  - peer: bottles
+    strength: optional
+    for: [holdings]
+    without: "a catalogue that points, and an offline cache that cannot be handed on"
+
+  - peer: data-pile
+    strength: optional
+    for: [custody]
+    without: >
+      hard copies in a directory, which is fine until somebody asks you to prove
+      when you had them
+
+# --------------------------------------------------------------- services --
+#
+# What a host COULD run. Declaring one starts nothing.
+#
+# Both are `kind: periodic` — fire, work, write, exit, no pid between firings —
+# and both were shaped that way long before there was a host that could order
+# them. The README already says the bot "only needs to turn on long enough to read
+# messages since its last appearance." That sentence is a periodic service
+# description; it just had nothing to say it to.
+
+serves:
+  - service: refresh
+    for: "keeping the catalogue's links resolvable, because they expire on a clock"
+    kind: periodic
+    start: "bin/refresh"
+    every: "6h"
+    required-for: [links-that-still-resolve]
+    optional: true
+    health: "exit 0"
+    # THE HEADLINE, and the one a host should order first.
+    #
+    # A Discord CDN attachment URL carries `ex` and `is` as hex unix seconds, and
+    # the difference between them is EXACTLY 86400 — measured from this
+    # repository's own committed data, not assumed. Every link dies 24 hours after
+    # it was issued.
+    #
+    # `bot/refresh.py` already walks every tracked category, tests each attachment
+    # with `cdn.expires_within`, re-fetches the originating message for a fresh
+    # signed URL and writes refs.json back. The repair is written, tested against
+    # real data, and complete.
+    #
+    # NOTHING SCHEDULES IT. `bin/daily` is init + sync + pin; refresh is not in it,
+    # and there is no other caller. So the project can fix its own decay and only
+    # does when a person remembers — which is the exact shape of thing a periodic
+    # binding exists for, and the reason this file is worth writing today.
+    #
+    # `6h` gives four attempts inside one link lifetime. It is a cadence, not a
+    # constant: a host may pick any value comfortably under 24h.
+
+  - service: daily
+    for: "reading new messages since the last appearance, and pinning what is new"
+    kind: periodic
+    start: "bin/Locker"
+    every: "1d"
+    required-for: [catalogue-freshness]
+    optional: true
+    health: "exit 0"
+    # `bin/Locker` is `bin/daily "Locker"`, which is init + sync + pin over every
+    # category whose name ends in that word.
+    #
+    # A CAUTION ABOUT THIS EXACT CADENCE. One day is precisely the CDN link
+    # lifetime, so a daily scan has zero margin: any jitter, any skipped run, any
+    # slow pin and the links written by the previous run are already dead. That is
+    # survivable only because `refresh` above exists — and it is the argument for
+    # ordering refresh even on a host that never orders this one.
+
+# ------------------------------------------------------------------- gaps --
+#
+# Named rather than worked around, because a menu item a host cannot order from is
+# legible and refusable.
+#
+# 1. THE START COMMANDS DO NOT RUN UNDER LAUNCHD AS WRITTEN. Every verb here
+#    reaches `uv run bin/cli.py ...`, and `uv` is at /usr/local/bin/uv on the
+#    machine this was drafted against, while a launchd job is given
+#    PATH=/usr/bin:/bin:/usr/sbin:/sbin. The job would fail at exec with something
+#    unhelpful. The fix belongs in this repository — resolve the interpreter
+#    absolutely in `bin/`, rather than asking a host to repair our PATH — and it is
+#    NOT done here, because a residency file should describe what is true.
+#
+# 2. NO SECRET IS DECLARED, AND ONE IS NEEDED. Both services authenticate to
+#    Discord with a bot token, currently read from `.env` by a dotenv loader in the
+#    work tree. RESIDENCY.md has `needs-secret:` for exactly this, and it is left
+#    unset until somebody decides whether a host should hold this token at all.
+#    An unattended job holding a bot token is a different posture from a person
+#    running the same command, and that is the operator's call and not this file's.
+#
+# 3. THE EXPIRY REPORT IS NOT A SERVICE AND SHOULD NOT BECOME ONE. Counting how
+#    many references are near expiry is a standing concern, not a job: it wants a
+#    constituency and a schedule of its own, and it writes a pull request rather
+#    than a file. That is an advocate seat, and it belongs in `advocate.yml`
+#    whenever this repository grows one.
