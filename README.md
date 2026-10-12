@@ -4,14 +4,12 @@ This is a template repository. That means you can use GitHub to copy it
 directly to your account without forking this one. You will be detached from my
 updates, which you should consider a feature! It's yours now. Make it cool.
 
-This repository is configured variously by:
-- `.env`: Holds environment variables and sensitive secrets for dotenv loader
-- `bin/setup`: Prepares server- and dev-side tooling
+This repository is configured by:
+- `bin/setup`: Prepares dev-side tooling
+- `locker.json` (optional, yours): `{owner, only, suppress}` for `bin/knit.mjs`
 
 This repository contains multiple entry points:
 - `bin/knit.mjs SOURCE...`: Knits your own locker into refs and markdown
-- `bin/Locker`: Reads channels in categories ending in ` Locker` (legacy bot)
-- `bin/daily "CategorySubstring"`: Reads channels in matching categories
 - `bin/serve`: Runs the Jekyll dev server for inspection
 
 This repository automatically builds and deploys for pushes to branch `main`.
@@ -61,6 +59,10 @@ Forum names repeat from locker to locker; the locker is the namespace.
 `--fetch` copies your own attachments into `lockers/media/` while the
 harvest's links are fresh. Discord signs them for 24 hours.
 
+The `refs.json` already in `--out` is the bookmark. Knit again after a new
+harvest and `_unmatched.md` lists what is new since the last knit and what
+is gone. Nothing has to keep reading Discord to find your new work.
+
 ## Why there is no bot
 
 A bot is one account holding read access to every channel it can see, run
@@ -82,16 +84,13 @@ had already made.
 
 ## About
 
-This is a bespoke Jekyll site that reads data committed by a discord.py bot.
-The bot is legacy. Nothing new depends on it.
+This is a bespoke Jekyll site. Its pages come from what an owner knits.
 
-The bot only needs to turn on long enough to read messages since it's last appearance.
+The `_data/` it still renders was written by a bot this repository no longer
+has; `bin/knit.mjs` reads it as one more harvest, so nothing it found is lost.
 
-Messages are only processed if they have a media signal: attachments, embeds, or links to supported music domains.
-
-Media-focused information is stored per Category group in a server.
-
-Messages and media are treated as stable once fetched.
+Messages are only knitted if they have a media signal: audio or video files,
+or links to supported music domains.
 
 ## Engineering philosophy
 
@@ -110,17 +109,13 @@ Self-sufficiency
 
 ## Tooling
 
-Python
-: Managed by `uv`
-: Versioned by `.python-version`
-: Secrets provided via dotenv
-
 Ruby
 : Managed by `bundler`
 : Versioned by `.ruby-version`
 
 Node
 : Managed by `npm`
+: Tested by `npm test`
 
 CI/CD
 : Performed by GitHub Actions
@@ -129,9 +124,10 @@ CI/CD
 Deployment
 : Hosted on GitHub Pages
 
-Discord API
-: Provided to the bot by discord.py
-: Provided to the static site users by the Discord-authenticated HTTP API
+Discord
+: Read by nobody on anybody's behalf
+: Each owner's own data package is their harvest
+: Signed-in site users are checked against the Discord-authenticated HTTP API
 
 Static site
 : Built by Jekyll

@@ -38,34 +38,20 @@ resident: lockers           # informational; the mount path is what counts
 # Labels, not locations. The host binds `label -> path` and may put them anywhere;
 # this file never names a directory.
 #
-# Today `bookmarks` and `refs` both live in `_data/` and are COMMITTED — which is a
-# binding this repository made for itself because there was nobody to ask. It works,
-# and it is the reason the site can be rebuilt from a clone with nothing running.
-# Saying so here is not a request to move them.
+# The old bot's `refs` live in `_data/` and are COMMITTED, which is a binding this
+# repository made for itself because there was nobody to ask. Knitted output goes
+# wherever `bin/knit.mjs --out` says, and that folder is the owner's.
 
 wants:
-  - label: bookmarks
-    holds: >
-      the read markers — per guild, per category, per channel, the message snowflake
-      each was last scanned to, plus last_sync
-    lifecycle: durable
-    disposition: private
-    # THE MOST IMPORTANT LABEL HERE, and the reason an uptime guarantee was never
-    # actually the requirement. `bot/bookmarks.py`: cursors only advance and keys
-    # are never deleted. A run that never happened costs nothing but lateness; a
-    # run that happens after a week reads a week. The bot has no state in memory
-    # worth protecting, which is precisely what makes it schedulable instead of
-    # hosted.
-
   - label: refs
     holds: >
-      the catalogue itself — one refs.json per category, the enumeration the site is
-      a rendering of
+      one owner's map: message ids per record, the work queue, and what is new
+      or gone since the last knit
     lifecycle: durable
     disposition: public
-    # `public` because it already is: Jekyll reads it at build time and every entry
-    # ships inside the published HTML. Recording the disposition it HAS rather than
-    # one it might like is the point of the column.
+    # It is also the bookmark. There used to be a `bookmarks` label here holding
+    # per-channel read cursors for a bot; whatever a new harvest holds that refs
+    # did not point at is new, so the cursors had nothing left to do.
 
   - label: holdings
     holds: >
@@ -104,82 +90,16 @@ peers:
 
 # --------------------------------------------------------------- services --
 #
-# What a host COULD run. Declaring one starts nothing.
-#
-# Both are `kind: periodic` — fire, work, write, exit, no pid between firings —
-# and both were shaped that way long before there was a host that could order
-# them. The README already says the bot "only needs to turn on long enough to read
-# messages since its last appearance." That sentence is a periodic service
-# description; it just had nothing to say it to.
+# None. There used to be two periodic services here, a bot sync and a CDN link
+# refresh, and both existed to keep one process reading everyone's lockers and
+# to keep its copies of their links alive. Knitting is something an owner does
+# when they harvest themselves; a host has nothing to schedule on their behalf.
 
-serves:
-  - service: refresh
-    for: "keeping the catalogue's links resolvable, because they expire on a clock"
-    kind: periodic
-    start: "bin/refresh"
-    every: "6h"
-    required-for: [links-that-still-resolve]
-    optional: true
-    health: "exit 0"
-    # THE HEADLINE, and the one a host should order first.
-    #
-    # A Discord CDN attachment URL carries `ex` and `is` as hex unix seconds, and
-    # the difference between them is EXACTLY 86400 — measured from this
-    # repository's own committed data, not assumed. Every link dies 24 hours after
-    # it was issued.
-    #
-    # `bot/refresh.py` already walks every tracked category, tests each attachment
-    # with `cdn.expires_within`, re-fetches the originating message for a fresh
-    # signed URL and writes refs.json back. The repair is written, tested against
-    # real data, and complete.
-    #
-    # NOTHING SCHEDULES IT. `bin/daily` is init + sync + pin; refresh is not in it,
-    # and there is no other caller. So the project can fix its own decay and only
-    # does when a person remembers — which is the exact shape of thing a periodic
-    # binding exists for, and the reason this file is worth writing today.
-    #
-    # `6h` gives four attempts inside one link lifetime. It is a cadence, not a
-    # constant: a host may pick any value comfortably under 24h.
-
-  - service: daily
-    for: "reading new messages since the last appearance, and pinning what is new"
-    kind: periodic
-    start: "bin/Locker"
-    every: "1d"
-    required-for: [catalogue-freshness]
-    optional: true
-    health: "exit 0"
-    # `bin/Locker` is `bin/daily "Locker"`, which is init + sync + pin over every
-    # category whose name ends in that word.
-    #
-    # A CAUTION ABOUT THIS EXACT CADENCE. One day is precisely the CDN link
-    # lifetime, so a daily scan has zero margin: any jitter, any skipped run, any
-    # slow pin and the links written by the previous run are already dead. That is
-    # survivable only because `refresh` above exists — and it is the argument for
-    # ordering refresh even on a host that never orders this one.
+serves: []
 
 # ------------------------------------------------------------------- gaps --
 #
-# Named rather than worked around, because a menu item a host cannot order from is
-# legible and refusable.
-#
-# 1. THE START COMMANDS DO NOT RUN UNDER LAUNCHD AS WRITTEN. Every verb here
-#    reaches `uv run bin/cli.py ...`, and `uv` is at /usr/local/bin/uv on the
-#    machine this was drafted against, while a launchd job is given
-#    PATH=/usr/bin:/bin:/usr/sbin:/sbin. The job would fail at exec with something
-#    unhelpful. The fix belongs in this repository — resolve the interpreter
-#    absolutely in `bin/`, rather than asking a host to repair our PATH — and it is
-#    NOT done here, because a residency file should describe what is true.
-#
-# 2. NO SECRET IS DECLARED, AND ONE IS NEEDED. Both services authenticate to
-#    Discord with a bot token, currently read from `.env` by a dotenv loader in the
-#    work tree. RESIDENCY.md has `needs-secret:` for exactly this, and it is left
-#    unset until somebody decides whether a host should hold this token at all.
-#    An unattended job holding a bot token is a different posture from a person
-#    running the same command, and that is the operator's call and not this file's.
-#
-# 3. THE EXPIRY REPORT IS NOT A SERVICE AND SHOULD NOT BECOME ONE. Counting how
-#    many references are near expiry is a standing concern, not a job: it wants a
-#    constituency and a schedule of its own, and it writes a pull request rather
-#    than a file. That is an advocate seat, and it belongs in `advocate.yml`
-#    whenever this repository grows one.
+# 1. PAGES KNITTED WITHOUT --fetch POINT AT DISCORD'S SIGNED LINKS, and those die
+#    24 hours after they were issued. Song links to other services do not. An
+#    owner who publishes audio files should knit with --fetch; nothing here
+#    forces it, and a host that binds `holdings` is the natural place to say so.
