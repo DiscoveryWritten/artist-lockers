@@ -31,15 +31,19 @@ async def run_sync(args, client: discord.Client) -> None:
             found_links, bookmark_path = await scanner.sync_guild(guild)
             if bookmark_path:
                 logger.info("Bookmarks flushed: %s", bookmark_path)
-            if found_links:
+            by_category: dict[int, list] = {}
+            for link in found_links:
+                by_category.setdefault(link.category_id, []).append(link)
+            for category_id, links in by_category.items():
                 export_path = exporter.export_links(
                     guild.id,
-                    found_links,
+                    category_id,
+                    links,
                     output_dir=bootstrap.get_out(),
                 )
                 logger.info(
                     "Export written: %s (%d links)",
-                    export_path, len(found_links)
+                    export_path, len(links)
                 )
     finally:
         await client.close()
