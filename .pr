@@ -1,17 +1,34 @@
 Knit your own refs: the locker owner builds the map, no bot reads the server
 
-Plan (merge qualifies when every box holds):
-- [ ] harvest shape: what any harvester emits, the owner's messages only
-- [ ] js/knit.js: harvest -> refs, a map of message pointers, not a copy
-  - [ ] forum post = unit; thread name = title
-  - [ ] sources = every media hit; several services = listener's choice
-  - [ ] lyrics = contiguous text-only posts; split lyrics -> unmatched
-  - [ ] control post `locker: …` overrides; the fail-safe for everything
-  - [ ] suppress: a forum or thread never lands in refs
-  - [ ] unmatched list: the owner's work queue, each with the post to write
-- [ ] render: refs + current harvest -> markdown (edits flow, refs don't move)
-- [ ] fetch: own attachments pulled while their URLs are fresh
-- [ ] harvesters: legacy bot refs.json, Discord data package
-- [ ] tests against the committed real data
-- [ ] IPFS out
-- [ ] README: why there is no bot
+The bot was the one flaw: one account reading every channel, writing
+everybody's work into one person's files. This turns the job around. An
+owner harvests only their own posts, `js/knit.js` turns them into a map of
+pointers, and the map renders to markdown they can host anywhere.
+
+## What lands
+
+- `js/knit.js`: pure (no DOM, fs or network), so the browser page and
+  `bin/knit.mjs` run the same rules
+  - forum post = record, titled by the post
+  - every song link or audio file = a source; several services are the listener's choice
+  - long posts in an unbroken run = lyrics; split lyrics are not guessed at
+  - first image = cover, else a link's thumbnail
+  - `locker: lyrics|sources|cover|title|skip|album` control posts override everything
+  - `--only` / `--suppress` by id or `Locker/forum` path (forum names repeat across lockers)
+  - `_unmatched.md`: the owner's work queue, each line with the control post that fixes it
+- refs hold message ids, never words: edit a lyric, re-harvest, re-knit, the map does not move
+- `js/harvest.js`: the old bot's refs.json, and Discord's own data package (which only ever holds the requester; DMs are dropped before they are read)
+- `bin/knit.mjs --fetch`: the owner's own attachments into their own folder while the links are fresh
+- IPFS out: Pinata, `bin/pin`, the distribute job, the player's gateway path
+- README: how to knit, and why there is no bot
+
+## Checked
+
+- [x] `npm test`: 10 pass, covering each rule, the committed real refs.json, and a synthetic data package (JSON + CSV, snowflakes past 2^53, a DM)
+- [x] knit of the committed test-server data: 6 messages → 5 records, 0 unmatched; forum posts titled by thread; "This is the Title" keeps both its Udio and its mp3
+
+## Not yet
+
+- [ ] a real data package. The harvester is written to the documented shape (`Account/user.json`, `Messages/c<id>/channel.json` + `messages.json|csv`); one real export will say whether `parent_id` is there (it decides whether forum posts know their forum) and what the folder casing is
+- [ ] the page does not call the knitter yet: next is a folder picker on the site that knits in the browser and hands back a zip
+- [ ] the bot is left in place, legacy. Its `run_sync` passes `export_links` no `category_id`, so a sync that finds links crashes before writing. Not fixed here; it is on its way out
