@@ -11,11 +11,12 @@
 // holds that it did not point at is reported new, and the --only and
 // --suppress it was knitted with carry over unless --config is given.
 
-import { readFile, writeFile, mkdir, readdir, stat, access } from "node:fs/promises";
+import { readFile, writeFile, mkdir, readdir, stat } from "node:fs/promises";
 import { join, dirname, relative } from "node:path";
 import { parseArgs } from "node:util";
-import { knit, render, media, images } from "../js/knit.js";
+import { knit, render } from "../js/knit.js";
 import { fromLegacyRefs, fromDataPackage, merge } from "../js/harvest.js";
+import { keep } from "../js/keep.js";
 
 const { values: opt, positionals } = parseArgs({
   allowPositionals: true,
@@ -63,36 +64,20 @@ if (!positionals.length) {
 const harvest = merge(await Promise.all(positionals.map(harvestFrom)));
 const refs = knit(harvest, config, previous);
 
-const expired = url => {
-  const ex = new URL(url).searchParams.get("ex");
-  return ex && parseInt(ex, 16) * 1000 < Date.now();
-};
-
-const local = {};
-let fetched = 0;
+let kept = { files: [], local: {}, failed: [] };
 if (opt.fetch) {
-  const byId = new Map(harvest.messages.map(m => [m.id, m]));
-  const wanted = refs.records.flatMap(r => [
-    ...(r.sources || []).flatMap(id => byId.get(id) ? media(byId.get(id)).filter(h => h.platform === "discord").map(h => [id, h.url]) : []),
-    ...(r.cover && byId.get(r.cover) ? images(byId.get(r.cover)).map(url => [r.cover, url]) : []),
-  ]);
-  for (const [id, url] of wanted) {
-    const name = `media/${id}-${decodeURIComponent(new URL(url).pathname.split("/").pop())}`;
-    const path = join(opt.out, name);
-    if (await access(path).then(() => true, () => false)) { local[url] = name; continue; }
-    if (expired(url)) { console.warn(`expired, re-harvest to fetch: ${name}`); continue; }
-    const res = await fetch(url);
-    if (!res.ok) { console.warn(`${res.status} fetching ${name}`); continue; }
-    await mkdir(dirname(path), { recursive: true });
-    await writeFile(path, Buffer.from(await res.arrayBuffer()));
-    local[url] = name;
-    fetched++;
+  const have = new Set(await readdir(join(opt.out, "media")).then(names => names.map(n => `media/${n}`), () => []));
+  kept = await keep(refs, harvest, { have });
+  for (const file of kept.files) {
+    await mkdir(dirname(join(opt.out, file.path)), { recursive: true });
+    await writeFile(join(opt.out, file.path), file.bytes);
   }
+  for (const f of kept.failed) console.warn(`not kept: ${f.url} (${f.reason})`);
 }
 
 await mkdir(opt.out, { recursive: true });
 await writeFile(join(opt.out, "refs.json"), JSON.stringify(refs, null, 2) + "\n");
-for (const file of render(refs, harvest, local)) {
+for (const file of render(refs, harvest, kept.local)) {
   await mkdir(dirname(join(opt.out, file.path)), { recursive: true });
   await writeFile(join(opt.out, file.path), file.text);
 }
@@ -100,4 +85,4 @@ for (const file of render(refs, harvest, local)) {
 const tracks = refs.records.filter(r => r.kind !== "album").length;
 console.log(`${harvest.messages.length} messages -> ${tracks} records, ${refs.unmatched.length} unmatched, ` +
   (previous ? `${refs.new.length} new, ${refs.gone.length} gone` : "first knit") +
-  (opt.fetch ? `, ${fetched} fetched` : "") + ` -> ${opt.out}/`);
+  (opt.fetch ? `, ${kept.files.length} fetched` : "") + ` -> ${opt.out}/`);
