@@ -13,7 +13,7 @@ const expired = (url, now) => {
   return !!ex && parseInt(ex, 16) * 1000 < now;
 };
 const named = (id, url) =>
-  `media/${id}-${decodeURIComponent(new URL(url).pathname.split("/").pop()).replace(/[/\\]/g, "-")}`;
+  `media/${id}-${decodeURIComponent(new URL(url).pathname.split("/").pop()).replace(/[/\\#?%]/g, "-")}`;
 
 export async function keep(refs, harvest, { have = new Set(), fetch = globalThis.fetch, progress = () => {}, now = Date.now() } = {}) {
   const byId = new Map(harvest.messages.map(m => [m.id, m]));

@@ -14,9 +14,10 @@
 import { readFile, writeFile, mkdir, readdir, stat } from "node:fs/promises";
 import { join, dirname, relative } from "node:path";
 import { parseArgs } from "node:util";
-import { knit, render } from "../js/knit.js";
+import { knit, render, pages } from "../js/knit.js";
 import { fromLegacyRefs, fromDataPackage, merge } from "../js/harvest.js";
 import { keep } from "../js/keep.js";
+import { site } from "../js/site.js";
 
 const { values: opt, positionals } = parseArgs({
   allowPositionals: true,
@@ -77,7 +78,7 @@ if (opt.fetch) {
 
 await mkdir(opt.out, { recursive: true });
 await writeFile(join(opt.out, "refs.json"), JSON.stringify(refs, null, 2) + "\n");
-for (const file of render(refs, harvest, kept.local)) {
+for (const file of [...render(refs, harvest, kept.local), ...site(pages(refs, harvest, kept.local))]) {
   await mkdir(dirname(join(opt.out, file.path)), { recursive: true });
   await writeFile(join(opt.out, file.path), file.text);
 }

@@ -22,7 +22,10 @@ Nobody reads the server for you. You harvest your own posts, the knitter
 turns them into a map, and the map renders into pages you can host anywhere.
 
 Open `knit.html`, drop in the zip Discord sent you, uncheck what is not for
-publishing, and download your locker. Or from a terminal:
+publishing, and download your locker. The download is a website already:
+an `index.html` that needs no build, your own audio files beside it, and the
+markdown and `refs.json` underneath. Put the folder on any host. Or from a
+terminal:
 
 ```
 bin/knit.mjs --only "Artist Lockers" --out lockers ~/Downloads/package
@@ -60,6 +63,13 @@ re-harvest, re-knit: the page changes and the map does not.
 
 `--suppress` and `--only` take ids or paths like `Autumn's Locker/music`.
 Forum names repeat from locker to locker; the locker is the namespace.
+
+A data package knows forums only by number. Name them on the page once;
+`refs.json` remembers (`config.names`, which `locker.json` can hold too).
+
+Every item in the work queue that has a fix comes with its control post
+written out, message links in posting order. Copy it, reorder if needed,
+paste it into the forum post.
 
 `--fetch` copies your own attachments into `lockers/media/` while the
 harvest's links are fresh. Discord signs them for 24 hours.

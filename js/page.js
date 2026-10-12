@@ -3,6 +3,8 @@
 import { knit, pages, queue, render, ancestry, media } from "./knit.js";
 import { fromLegacyRefs, fromDataPackage, merge } from "./harvest.js";
 import { entries, zip } from "./zip.js";
+import { keep } from "./keep.js";
+import { site } from "./site.js";
 
 const SAMPLE = { harvest: "sample/harvest.json", last: "sample/last-refs.json" };
 const ICONS = new Set(["discord", "suno", "udio", "youtube", "spotify"]);
@@ -151,8 +153,23 @@ function drawLocker(list) {
   $("#locker").hidden = false;
 }
 
-function download() {
-  const files = [...render(state.refs, state.harvest), { path: "refs.json", text: JSON.stringify(state.refs, null, 2) + "\n" }];
+async function download() {
+  const { refs, harvest } = state;
+  const button = $("#download");
+  let kept = { files: [], local: {}, failed: [] };
+  if ($("#keep").checked) {
+    button.disabled = true;
+    kept = await keep(refs, harvest, { progress: ({ done, total }) => (button.textContent = `keeping ${done}/${total}`) });
+    button.disabled = false;
+    $("#kept").replaceChildren(...kept.failed.map(f => h("li", {}, h("a", { href: f.url, target: "_blank" }, f.url.split("/").pop().split("?")[0]), ` ${f.reason}`)));
+  }
+  button.textContent = "download .zip";
+  const files = [
+    ...render(refs, harvest, kept.local),
+    ...site(pages(refs, harvest, kept.local)),
+    ...kept.files,
+    { path: "refs.json", text: JSON.stringify(refs, null, 2) + "\n" },
+  ];
   const a = h("a", { href: URL.createObjectURL(zip(files)), download: "locker.zip" });
   a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);
