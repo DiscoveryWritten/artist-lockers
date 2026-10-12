@@ -21,6 +21,7 @@ exclude:
   - bot
   - bin
   - worker
+  - test
   - node_modules
   - __pycache__
   - package.json

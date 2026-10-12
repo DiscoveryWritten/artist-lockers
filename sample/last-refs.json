@@ -1,0 +1,72 @@
+{
+  "owner": "106584132900941824",
+  "knitted_at": "2026-10-01T00:00:00.000Z",
+  "config": {
+    "only": [
+      "Autumn's Locker"
+    ],
+    "suppress": []
+  },
+  "records": [
+    {
+      "id": "1508000020971520000",
+      "channel": "1508000020971520000",
+      "kind": "track",
+      "by": "auto",
+      "sources": [
+        "1508000041943040000"
+      ],
+      "cover": null,
+      "lyrics": null
+    },
+    {
+      "id": "1508000025165824000",
+      "channel": "1508000025165824000",
+      "kind": "track",
+      "by": "auto",
+      "sources": [
+        "1508000050331648000",
+        "1508000058720256000"
+      ],
+      "cover": null,
+      "lyrics": null
+    },
+    {
+      "id": "1508000033554432000",
+      "channel": "1508000033554432000",
+      "kind": "post",
+      "by": "auto",
+      "sources": [],
+      "cover": null,
+      "lyrics": null
+    },
+    {
+      "id": "1508000037748736000",
+      "channel": "1508000037748736000",
+      "kind": "post",
+      "by": "auto",
+      "sources": [],
+      "cover": null,
+      "lyrics": null
+    }
+  ],
+  "unmatched": [
+    {
+      "id": "1508000025165824000",
+      "reason": "lyrics are split across 2 posts with other posts between them",
+      "hint": "post `locker: lyrics` followed by their message links, in the order they should read"
+    },
+    {
+      "id": "1508000033554432000",
+      "reason": "no media in this post",
+      "hint": "link one with `locker: sources`, `locker: skip` it, or suppress its forum"
+    },
+    {
+      "id": "1508000037748736000",
+      "reason": "no media in this post",
+      "hint": "link one with `locker: sources`, `locker: skip` it, or suppress its forum"
+    }
+  ],
+  "new": [],
+  "gone": []
+}

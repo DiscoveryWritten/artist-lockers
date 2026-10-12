@@ -8,7 +8,8 @@
 // "Autumn's Locker/music"; locker.json may hold {owner, only, suppress}.
 //
 // The refs.json already in --out is the bookmark: whatever this harvest
-// holds that it did not point at is reported new.
+// holds that it did not point at is reported new, and the --only and
+// --suppress it was knitted with carry over unless --config is given.
 
 import { readFile, writeFile, mkdir, readdir, stat, access } from "node:fs/promises";
 import { join, dirname, relative } from "node:path";
@@ -28,7 +29,9 @@ const { values: opt, positionals } = parseArgs({
   },
 });
 
-const config = opt.config ? JSON.parse(await readFile(opt.config, "utf8")) : {};
+const last = join(opt.out, "refs.json");
+const previous = await readFile(last, "utf8").then(JSON.parse, () => null);
+const config = opt.config ? JSON.parse(await readFile(opt.config, "utf8")) : { ...previous?.config };
 config.owner = opt.owner || config.owner;
 config.only = [...(config.only || []), ...opt.only];
 config.suppress = [...(config.suppress || []), ...opt.suppress];
@@ -58,8 +61,6 @@ if (!positionals.length) {
 }
 
 const harvest = merge(await Promise.all(positionals.map(harvestFrom)));
-const last = join(opt.out, "refs.json");
-const previous = await readFile(last, "utf8").then(JSON.parse, () => null);
 const refs = knit(harvest, config, previous);
 
 const expired = url => {

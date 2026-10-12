@@ -155,3 +155,11 @@ test("refs are the bookmark: what the last refs did not point at is new, what th
   assert.match(queue, /## New since the last knit \(2\)/);
   assert.match(queue, /\[Your Body: Exit\]\(.*\/11\/802\) new media/);
 });
+
+test("zip: what the page hands back opens again, names and all", async () => {
+  const { zip, entries } = await import("../js/zip.js");
+  const files = [{ path: "autumn-s-locker/music/ünïcode.md", text: "lyrics  \n" }, { path: "refs.json", text: "{}\n" }];
+  const back = await entries(zip(files));
+  assert.deepEqual(back.paths, files.map(f => f.path));
+  assert.equal(await back.read(files[0].path), files[0].text);
+});

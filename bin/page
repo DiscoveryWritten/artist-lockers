@@ -1,0 +1,4 @@
+#!/bin/bash
+# The knit page is plain HTML: any static server will do.
+echo "http://127.0.0.1:${1:-4000}/knit.html"
+exec python3 -m http.server "${1:-4000}" --bind 127.0.0.1

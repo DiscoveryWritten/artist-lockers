@@ -1,0 +1,281 @@
+{
+  "owner": {
+    "id": "106584132900941824",
+    "name": "thenautumn"
+  },
+  "source": "sample",
+  "channels": {
+    "1508000004194304000": {
+      "id": "1508000004194304000",
+      "name": "music",
+      "type": "forum",
+      "parent": null,
+      "category": "Autumn's Locker",
+      "guild": {
+        "id": "1504000000000000001",
+        "name": "Artist Lockers"
+      }
+    },
+    "1508000008388608000": {
+      "id": "1508000008388608000",
+      "name": "personas",
+      "type": "forum",
+      "parent": null,
+      "category": "Autumn's Locker",
+      "guild": {
+        "id": "1504000000000000001",
+        "name": "Artist Lockers"
+      }
+    },
+    "1508000012582912000": {
+      "id": "1508000012582912000",
+      "name": "updates",
+      "type": "text",
+      "parent": null,
+      "category": "Autumn's Locker",
+      "guild": {
+        "id": "1504000000000000001",
+        "name": "Artist Lockers"
+      }
+    },
+    "1508000016777216000": {
+      "id": "1508000016777216000",
+      "name": "artist-chat",
+      "type": "text",
+      "parent": null,
+      "category": "Lobby",
+      "guild": {
+        "id": "1504000000000000001",
+        "name": "Artist Lockers"
+      }
+    },
+    "1508000020971520000": {
+      "id": "1508000020971520000",
+      "name": "Your Body: Exit",
+      "type": "forum_post",
+      "parent": "1508000004194304000",
+      "category": "Autumn's Locker",
+      "guild": {
+        "id": "1504000000000000001",
+        "name": "Artist Lockers"
+      }
+    },
+    "1508000025165824000": {
+      "id": "1508000025165824000",
+      "name": "BITFLIP",
+      "type": "forum_post",
+      "parent": "1508000004194304000",
+      "category": "Autumn's Locker",
+      "guild": {
+        "id": "1504000000000000001",
+        "name": "Artist Lockers"
+      }
+    },
+    "1508000029360128000": {
+      "id": "1508000029360128000",
+      "name": "Planetsong",
+      "type": "forum_post",
+      "parent": "1508000004194304000",
+      "category": "Autumn's Locker",
+      "guild": {
+        "id": "1504000000000000001",
+        "name": "Artist Lockers"
+      }
+    },
+    "1508000033554432000": {
+      "id": "1508000033554432000",
+      "name": "untitled hum",
+      "type": "forum_post",
+      "parent": "1508000004194304000",
+      "category": "Autumn's Locker",
+      "guild": {
+        "id": "1504000000000000001",
+        "name": "Artist Lockers"
+      }
+    },
+    "1508000037748736000": {
+      "id": "1508000037748736000",
+      "name": "Autuonomy",
+      "type": "forum_post",
+      "parent": "1508000008388608000",
+      "category": "Autumn's Locker",
+      "guild": {
+        "id": "1504000000000000001",
+        "name": "Artist Lockers"
+      }
+    }
+  },
+  "messages": [
+    {
+      "id": "1508000041943040000",
+      "channel": "1508000020971520000",
+      "author": "106584132900941824",
+      "timestamp": "",
+      "content": "https://www.udio.com/songs/bkTZvRXiFSNLu6BzST2Lkw",
+      "attachments": [],
+      "embeds": [
+        {
+          "url": "https://www.udio.com/songs/bkTZvRXiFSNLu6BzST2Lkw",
+          "title": "Autuonomy - Your Body: Exit [draft 1] | Udio",
+          "thumbnail": "https://imagedelivery.net/C9yUr1FL21Q6JwfYYh2ozQ/aee36986-d419-4353-7b38-545964cf2500/public"
+        }
+      ]
+    },
+    {
+      "id": "1508000046137344000",
+      "channel": "1508000020971520000",
+      "author": "106584132900941824",
+      "timestamp": "",
+      "content": "draft 2, louder",
+      "attachments": [
+        {
+          "url": "https://cdn.discordapp.com/attachments/1/2/your-body-exit-draft-2.mp3",
+          "filename": "your-body-exit-draft-2.mp3",
+          "content_type": "audio/mpeg"
+        }
+      ],
+      "embeds": []
+    },
+    {
+      "id": "1508000050331648000",
+      "channel": "1508000025165824000",
+      "author": "106584132900941824",
+      "timestamp": "",
+      "content": "https://www.youtube.com/watch?v=aaTpYIb4mcs",
+      "attachments": [],
+      "embeds": [
+        {
+          "url": "https://www.youtube.com/embed/aaTpYIb4mcs",
+          "title": "BITFLIP",
+          "thumbnail": "https://i.ytimg.com/vi/aaTpYIb4mcs/maxresdefault.jpg"
+        }
+      ]
+    },
+    {
+      "id": "1508000054525952000",
+      "channel": "1508000025165824000",
+      "author": "106584132900941824",
+      "timestamp": "",
+      "content": "Take me back\nto the days (uh uh)\nwhen we still thought there were ways\nCaptain Planet stops climate change",
+      "attachments": [],
+      "embeds": []
+    },
+    {
+      "id": "1508000058720256000",
+      "channel": "1508000025165824000",
+      "author": "106584132900941824",
+      "timestamp": "",
+      "content": "the 4-track bounce",
+      "attachments": [
+        {
+          "url": "https://cdn.discordapp.com/attachments/1/3/bitflip-bounce.mp3",
+          "filename": "bitflip-bounce.mp3",
+          "content_type": "audio/mpeg"
+        }
+      ],
+      "embeds": []
+    },
+    {
+      "id": "1508000062914560000",
+      "channel": "1508000025165824000",
+      "author": "106584132900941824",
+      "timestamp": "",
+      "content": "We got our\nshit pushed in (uh! uh!)\nby robot master mega men\nParty with our pox chicken",
+      "attachments": [],
+      "embeds": []
+    },
+    {
+      "id": "1508000067108864000",
+      "channel": "1508000029360128000",
+      "author": "106584132900941824",
+      "timestamp": "",
+      "content": "https://suno.com/song/4ba79df8-fd2b-45d5-be6d-ae65050ed505",
+      "attachments": [],
+      "embeds": [
+        {
+          "url": "https://suno.com/song/4ba79df8-fd2b-45d5-be6d-ae65050ed505",
+          "title": "Planetsong: Unknown (F2)",
+          "thumbnail": "https://cdn2.suno.ai/image_large_4ba79df8-fd2b-45d5-be6d-ae65050ed505.jpeg"
+        }
+      ]
+    },
+    {
+      "id": "1508000071303168000",
+      "channel": "1508000029360128000",
+      "author": "106584132900941824",
+      "timestamp": "",
+      "content": "second verse first, because\nthat is how it came\nout of the static\nand into the room",
+      "attachments": [],
+      "embeds": []
+    },
+    {
+      "id": "1508000075497472000",
+      "channel": "1508000029360128000",
+      "author": "106584132900941824",
+      "timestamp": "",
+      "content": "a rough mix",
+      "attachments": [
+        {
+          "url": "https://cdn.discordapp.com/attachments/1/4/planetsong-rough.wav",
+          "filename": "planetsong-rough.wav",
+          "content_type": "audio/wav"
+        }
+      ],
+      "embeds": []
+    },
+    {
+      "id": "1508000079691776000",
+      "channel": "1508000029360128000",
+      "author": "106584132900941824",
+      "timestamp": "",
+      "content": "first verse, written last\nwhen the planet\nfinally sang back\nin its own key",
+      "attachments": [],
+      "embeds": []
+    },
+    {
+      "id": "1508000083886080000",
+      "channel": "1508000029360128000",
+      "author": "106584132900941824",
+      "timestamp": "",
+      "content": "locker: lyrics\nhttps://discord.com/channels/1504000000000000001/1508000029360128000/1508000079691776000\nhttps://discord.com/channels/1504000000000000001/1508000029360128000/1508000071303168000",
+      "attachments": [],
+      "embeds": []
+    },
+    {
+      "id": "1508000088080384000",
+      "channel": "1508000033554432000",
+      "author": "106584132900941824",
+      "timestamp": "",
+      "content": "need to record this before I forget it",
+      "attachments": [],
+      "embeds": []
+    },
+    {
+      "id": "1508000092274688000",
+      "channel": "1508000037748736000",
+      "author": "106584132900941824",
+      "timestamp": "",
+      "content": "the name the songs go out under\nnot a mask, a mailbox",
+      "attachments": [],
+      "embeds": []
+    },
+    {
+      "id": "1508000096468992000",
+      "channel": "1508000012582912000",
+      "author": "106584132900941824",
+      "timestamp": "",
+      "content": "locker: album Exit Music\nhttps://discord.com/channels/1504000000000000001/1508000020971520000\nhttps://discord.com/channels/1504000000000000001/1508000025165824000\nhttps://discord.com/channels/1504000000000000001/1508000029360128000",
+      "attachments": [],
+      "embeds": []
+    },
+    {
+      "id": "1508000100663296000",
+      "channel": "1508000016777216000",
+      "author": "106584132900941824",
+      "timestamp": "",
+      "content": "everyone go hear this https://suno.com/song/4ba79df8-fd2b-45d5-be6d-ae65050ed505",
+      "attachments": [],
+      "embeds": []
+    }
+  ]
+}

@@ -9,6 +9,8 @@ This repository is configured by:
 - `locker.json` (optional, yours): `{owner, only, suppress}` for `bin/knit.mjs`
 
 This repository contains multiple entry points:
+- `knit.html`: The same knitting, in the browser, from the zip Discord sends you
+- `bin/page`: Serves `knit.html` locally, no Ruby needed
 - `bin/knit.mjs SOURCE...`: Knits your own locker into refs and markdown
 - `bin/serve`: Runs the Jekyll dev server for inspection
 
@@ -18,6 +20,9 @@ This repository automatically builds and deploys for pushes to branch `main`.
 
 Nobody reads the server for you. You harvest your own posts, the knitter
 turns them into a map, and the map renders into pages you can host anywhere.
+
+Open `knit.html`, drop in the zip Discord sent you, uncheck what is not for
+publishing, and download your locker. Or from a terminal:
 
 ```
 bin/knit.mjs --only "Artist Lockers" --out lockers ~/Downloads/package

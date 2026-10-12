@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Knit your locker</title>
+  <link rel="stylesheet" href="css/knit.css">
+  <script type="module" src="js/page.js"></script>
+</head>
+<body>
+  <header>
+    <h1>Knit your locker</h1>
+    <p>Everything happens on this page. Nothing you choose here is sent anywhere.</p>
+  </header>
+
+  <section id="gather">
+    <label data-drop>
+      <strong>Your Discord data package</strong>
+      <span>The .zip Discord sends you: Settings › Data &amp; Privacy › Request all of my data. Drop it here, or pick it.</span>
+      <input type="file" id="pick" accept=".zip,.json" multiple>
+    </label>
+    <label>
+      <strong>Your last refs.json</strong>
+      <span>Optional. Whatever it does not point at yet shows up as new.</span>
+      <input type="file" id="last" accept=".json">
+    </label>
+    <p><button id="sample" type="button">try it on the sample</button></p>
+    <p id="error" role="alert"></p>
+  </section>
+
+  <section id="choose" hidden>
+    <h2>What lands</h2>
+    <p><small>An unchecked locker is never read. Anything unchecked inside one never reaches your refs.</small></p>
+    <div id="tree"></div>
+  </section>
+
+  <section id="work" hidden>
+    <h2>Work queue <small id="tally"></small></h2>
+    <p><small>Fix these in Discord with a control post (<code>locker: lyrics</code>, <code>sources</code>, <code>cover</code>, <code>title</code>, <code>skip</code>, <code>album</code>), then knit again.</small></p>
+    <ul id="queue"></ul>
+  </section>
+
+  <section id="locker" hidden>
+    <h2>Your locker <small id="count"></small> <button id="download" type="button">download .zip</button></h2>
+    <div id="records"></div>
+  </section>
+</body>
+</html>

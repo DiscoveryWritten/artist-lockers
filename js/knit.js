@@ -74,7 +74,7 @@ export function control(message) {
 }
 
 // The places a unit lives, outermost first: locker, forum or channel, thread.
-function ancestry(harvest, channelId) {
+export function ancestry(harvest, channelId) {
   const chain = [];
   for (let c = harvest.channels[channelId]; c; c = harvest.channels[c.parent]) chain.unshift(c);
   const locker = chain[0]?.category || chain[0]?.guild?.name || "";
@@ -210,6 +210,7 @@ export function knit(harvest, config = {}, previous = null) {
   return {
     owner: owner || null,
     knitted_at: new Date().toISOString(),
+    config: { only: config.only || [], suppress: config.suppress || [] },
     records: all,
     unmatched,
     new: fresh,
@@ -226,35 +227,31 @@ function deepLink(harvest, channel, message) {
 
 const yaml = v => JSON.stringify(v);
 
-export function render(refs, harvest, local = {}) {
+// What a page holds, before it is markdown. The browser previews these.
+export function pages(refs, harvest, local = {}) {
   const byId = new Map(harvest.messages.map(m => [m.id, m]));
   const used = new Set();
-  const files = [];
-  const pages = new Map();
+  const out = new Map();
 
-  const placeOf = r => {
+  for (const r of refs.records.filter(r => r.kind !== "album")) {
     const where = ancestry(harvest, r.channel);
+    const thread = THREADS.has(harvest.channels[r.channel]?.type);
     const first = byId.get(r.sources[0]) || byId.get(r.id);
-    const title = r.title || (THREADS.has(harvest.channels[r.channel]?.type)
-      ? harvest.channels[r.channel].name
+    const title = r.title || (thread ? harvest.channels[r.channel].name
       : first && (media(first)[0]?.title || media(first)[0]?.filename || prose(first).split("\n")[0])) || r.id;
     const dirs = where.names.slice(0, 2).map(n => slug(n) || "untitled");
     let path = [...dirs, `${slug(title) || r.id}.md`].join("/");
     if (used.has(path)) path = path.replace(/\.md$/, `-${r.id}.md`);
     used.add(path);
-    return { title, path, where };
-  };
+    const near = url => local[url] ? relative(path, local[url]) : url;
 
-  for (const r of refs.records.filter(r => r.kind !== "album")) {
-    const { title, path, where } = placeOf(r);
-    pages.set(r.id, { title, path });
     const sources = r.sources.flatMap(id => {
       const m = byId.get(id);
       if (!m) return [];
       const caption = prose(m);
       return media(m).map(h => ({
         platform: h.platform,
-        url: local[h.url] ? relative(path, local[h.url]) : h.url,
+        url: near(h.url),
         ...(h.title && { label: h.title }),
         ...(caption && lines(caption) < LYRIC_LINES && { caption }),
         link: deepLink(harvest, m.channel, m.id),
@@ -263,58 +260,82 @@ export function render(refs, harvest, local = {}) {
     const coverMsg = byId.get(r.cover);
     const cover = coverMsg ? images(coverMsg)[0]
       : r.sources.map(id => byId.get(id)).filter(Boolean).flatMap(media).find(h => h.thumbnail)?.thumbnail;
-    const lyrics = (r.lyrics || []).map(id => byId.get(id)).filter(Boolean).map(prose).join("\n\n");
-
-    const front = [
-      "---",
-      `title: ${yaml(title)}`,
-      `locker: ${yaml(where.names[0])}`,
-      `link: ${yaml(deepLink(harvest, r.channel, THREADS.has(harvest.channels[r.channel]?.type) ? null : r.id))}`,
-      ...(cover ? [`cover: ${yaml(local[cover] ? relative(path, local[cover]) : cover)}`] : []),
-      ...(sources.length ? ["sources:", ...sources.map(s => `  - ${yaml(s)}`)] : []),
-      "---",
-    ];
-    const body = lyrics ? lyrics.split("\n").map(l => l ? `${l}  ` : "").join("\n") + "\n" : "";
-    files.push({ path, text: front.join("\n") + "\n\n" + body });
+    out.set(r.id, {
+      id: r.id, kind: r.kind, path, title,
+      locker: where.names[0], place: where.names[1],
+      link: deepLink(harvest, r.channel, thread ? null : r.id),
+      cover: cover ? near(cover) : null,
+      sources,
+      lyrics: (r.lyrics || []).map(id => byId.get(id)).filter(Boolean).map(prose).join("\n\n") || null,
+    });
   }
 
   for (const a of refs.records.filter(r => r.kind === "album")) {
     const title = a.title || `album ${a.id}`;
     const path = `albums/${slug(title) || a.id}.md`;
-    const tracks = a.tracks.map(t => pages.get(t)).filter(Boolean);
-    pages.set(a.id, { title, path });
-    files.push({
-      path,
-      text: ["---", `title: ${yaml(title)}`, "kind: album", "---", "",
-        ...tracks.map((t, i) => `${i + 1}. [${t.title}](${relative(path, t.path)})`), ""].join("\n"),
-    });
+    const tracks = a.tracks.map(t => out.get(t)).filter(Boolean).map(t => ({ title: t.title, path: relative(path, t.path) }));
+    out.set(a.id, { id: a.id, kind: "album", path, title, tracks });
   }
+  return [...out.values()];
+}
 
-  const index = [...pages.values()].sort((a, b) => a.path.localeCompare(b.path));
+// The owner's work queue, every line with somewhere to go and fix it.
+export function queue(refs, harvest, list = pages(refs, harvest)) {
+  const byId = new Map(harvest.messages.map(m => [m.id, m]));
+  const titles = new Map(list.map(p => [p.id, p.title]));
+  const at = (id, channel) => {
+    const m = byId.get(id);
+    return m ? deepLink(harvest, m.channel, m.id) : deepLink(harvest, harvest.channels[id] ? id : channel || id);
+  };
+  return {
+    unmatched: refs.unmatched.map(u => ({ ...u, title: titles.get(u.id) || u.id, link: at(u.id) })),
+    new: (refs.new || []).map(n => ({ ...n, title: titles.get(n.record || n.id) || n.id, link: at(n.id) })),
+    gone: (refs.gone || []).map(g => ({ ...g, link: at(g.id, g.channel) })),
+  };
+}
+
+export function render(refs, harvest, local = {}) {
+  const list = pages(refs, harvest, local);
+  const files = list.map(p => {
+    if (p.kind === "album") return {
+      path: p.path,
+      text: ["---", `title: ${yaml(p.title)}`, "kind: album", "---", "",
+        ...p.tracks.map((t, i) => `${i + 1}. [${t.title}](${t.path})`), ""].join("\n"),
+    };
+    const front = [
+      "---",
+      `title: ${yaml(p.title)}`,
+      `locker: ${yaml(p.locker)}`,
+      `link: ${yaml(p.link)}`,
+      ...(p.cover ? [`cover: ${yaml(p.cover)}`] : []),
+      ...(p.sources.length ? ["sources:", ...p.sources.map(s => `  - ${yaml(s)}`)] : []),
+      "---",
+    ];
+    const body = p.lyrics ? p.lyrics.split("\n").map(l => l ? `${l}  ` : "").join("\n") + "\n" : "";
+    return { path: p.path, text: front.join("\n") + "\n\n" + body };
+  });
+
+  const index = [...list].sort((a, b) => a.path.localeCompare(b.path));
   files.push({
     path: "index.md",
     text: ["---", "title: Locker", "---", "", ...index.map(p => `- [${p.title}](${p.path})`), ""].join("\n"),
   });
 
-  const at = (id, channel) => {
-    const m = byId.get(id);
-    return m ? deepLink(harvest, m.channel, m.id) : deepLink(harvest, harvest.channels[id] ? id : channel || id);
-  };
-  const name = id => pages.get(id)?.title || id;
+  const q = queue(refs, harvest, list);
   files.push({
     path: "_unmatched.md",
     text: [
-      `# Unmatched (${refs.unmatched.length})`,
+      `# Unmatched (${q.unmatched.length})`,
       "",
       "The work queue. Each line is something the knitter would not guess at.",
       "Fix it in Discord with a control post, re-harvest, re-knit.",
       "",
-      ...refs.unmatched.map(u => `- [ ] [${u.id}](${at(u.id)}) ${u.reason}${u.hint ? `\n  - ${u.hint}` : ""}`),
-      ...((refs.new || []).length ? ["", `## New since the last knit (${refs.new.length})`, "",
-        ...refs.new.map(n => `- [${name(n.record || n.id)}](${at(n.id)}) new ${n.what}`)] : []),
-      ...((refs.gone || []).length ? ["", `## Gone since the last knit (${refs.gone.length})`, "",
+      ...q.unmatched.map(u => `- [ ] [${u.title}](${u.link}) ${u.reason}${u.hint ? `\n  - ${u.hint}` : ""}`),
+      ...(q.new.length ? ["", `## New since the last knit (${q.new.length})`, "",
+        ...q.new.map(n => `- [${n.title}](${n.link}) new ${n.what}`)] : []),
+      ...(q.gone.length ? ["", `## Gone since the last knit (${q.gone.length})`, "",
         "Deleted in Discord, suppressed, or missing from this harvest.", "",
-        ...refs.gone.map(g => `- [${g.id}](${at(g.id, g.channel)}) ${g.what}`)] : []),
+        ...q.gone.map(g => `- [${g.id}](${g.link}) ${g.what}`)] : []),
       "",
     ].join("\n"),
   });
