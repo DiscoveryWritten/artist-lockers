@@ -1,1 +1,17 @@
-no draft yet - replace this file: line 1 becomes the PR title, the rest the body
+Knit your own refs: the locker owner builds the map, no bot reads the server
+
+Plan (merge qualifies when every box holds):
+- [ ] harvest shape: what any harvester emits, the owner's messages only
+- [ ] js/knit.js: harvest -> refs, a map of message pointers, not a copy
+  - [ ] forum post = unit; thread name = title
+  - [ ] sources = every media hit; several services = listener's choice
+  - [ ] lyrics = contiguous text-only posts; split lyrics -> unmatched
+  - [ ] control post `locker: …` overrides; the fail-safe for everything
+  - [ ] suppress: a forum or thread never lands in refs
+  - [ ] unmatched list: the owner's work queue, each with the post to write
+- [ ] render: refs + current harvest -> markdown (edits flow, refs don't move)
+- [ ] fetch: own attachments pulled while their URLs are fresh
+- [ ] harvesters: legacy bot refs.json, Discord data package
+- [ ] tests against the committed real data
+- [ ] IPFS out
+- [ ] README: why there is no bot
