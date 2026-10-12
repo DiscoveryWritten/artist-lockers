@@ -4,7 +4,6 @@
   "message_id": {{- link.message.id | jsonify | append: ',' -}}
   "source_type": {{- link.source_type | jsonify | append: ',' -}}
   "content_type": {{- link.attachment.content_type | jsonify | append: ',' -}}
-  "cid": {{- link.ipfs_cid | jsonify | append: ',' -}}
   "cdn": {{- link.url | jsonify | append: ',' -}}
   "label": {{- link.label | jsonify | append: ',' -}}
   "cover": {{- link.embed.thumbnail_url | jsonify -}}

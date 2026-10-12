@@ -1,2 +1,0 @@
-#!/bin/bash
-uv run bin/cli.py pin --budget "$1"
