@@ -89,6 +89,14 @@ button:hover { background: oklab(48% 0 0); }
 .tree summary { cursor: pointer; font-size: .9rem; }
 .tree input:disabled ~ span { opacity: .4; }
 
+.project { padding: .6rem 0; border-top: 1px solid oklab(33% 0 0); }
+.project h3 { margin: 0 0 .3rem; font-size: 1.05rem; }
+.project ol { list-style: none; padding: 0; margin: 0; display: grid; gap: .35rem; }
+.project li { display: grid; grid-template-columns: 2.25rem 1fr; gap: .6rem; align-items: center; }
+.project li > img, .project li > .blank { width: 2.25rem; height: 2.25rem; object-fit: cover; border-radius: .3rem; background: oklab(32% 0 0); }
+.chips { display: inline-flex; flex-wrap: wrap; gap: .2rem .6rem; margin-left: .5rem; font-size: .85rem; }
+.chips img { width: 1rem; height: 1rem; vertical-align: -.2rem; margin-right: .25rem; border-radius: .2rem; }
+
 #queue { padding-left: 1.25rem; margin: .5rem 0 0; }
 #queue .post {
   display: flex;

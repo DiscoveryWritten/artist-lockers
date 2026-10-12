@@ -1,6 +1,6 @@
 // knit.html: harvest, choose, knit, keep. Nothing here leaves the page.
 
-import { knit, pages, queue, render, ancestry, media } from "./knit.js";
+import { knit, pages, queue, render, ancestry, media, toc } from "./knit.js";
 import { fromLegacyRefs, fromDataPackage, merge } from "./harvest.js";
 import { entries, zip } from "./zip.js";
 import { keep } from "./keep.js";
@@ -108,10 +108,31 @@ function choices() {
 function reknit() {
   const { harvest, previous } = state;
   if (!harvest) return;
-  state.refs = knit(harvest, choices(), previous);
+  const chosen = choices();
+  drawToc(toc(harvest, chosen));
+  state.refs = knit(harvest, chosen, previous);
   const list = pages(state.refs, harvest);
   drawQueue(queue(state.refs, harvest, list));
   drawLocker(list);
+}
+
+// The proto-project list: forums and the header post of each entry in them.
+function drawToc(projects) {
+  const full = projects.filter(p => p.entries.length), empty = projects.filter(p => !p.entries.length);
+  const chip = s => h("a", { href: s.url, target: "_blank", "data-platform": s.platform },
+    ICONS.has(s.platform) ? h("img", { src: `img/${s.platform}.png`, alt: "" }) : null, s.label || s.platform);
+  $("#toc").replaceChildren(
+    ...full.map(p => h("div", { class: "project" },
+      h("h3", {}, p.name, h("small", {}, ` ${p.locker} · ${p.entries.length} ${p.entries.length === 1 ? "entry" : "entries"}`)),
+      h("ol", {}, p.entries.map(e => h("li", {},
+        e.cover ? h("img", { src: e.cover, alt: "", loading: "lazy" }) : h("span", { class: "blank" }),
+        h("span", {}, h("a", { href: e.link, target: "_blank" }, e.title),
+          e.sources.length ? h("span", { class: "chips" }, e.sources.map(chip)) : null,
+          h("small", {}, e.header ? (e.replies ? ` +${e.replies} after the header` : "") : " header not harvested"))))))),
+    empty.length ? h("p", {}, h("small", {}, `${empty.length} more projects with nothing harvested: ${empty.map(p => p.name).join(", ")}`)) : "");
+  const n = (k, word) => `${k} ${word}${k === 1 ? "" : "s"}`;
+  $("#toc-count").textContent = `${n(full.length, "project")}, ${n(full.reduce((k, p) => k + p.entries.length, 0), "entry").replace(/entrys$/, "entries")}`;
+  $("#projects").hidden = false;
 }
 
 function drawQueue(q) {

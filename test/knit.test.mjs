@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
-import { knit, render, control, pages } from "../js/knit.js";
+import { knit, render, control, pages, toc } from "../js/knit.js";
 import { fromLegacyRefs, fromDataPackage } from "../js/harvest.js";
 
 const ME = "106584132900941824";
@@ -75,9 +75,28 @@ test("suppress by locker path never lets a forum land, even though forum names r
   assert.deepEqual(refs.records.map(r => r.id), ["11"]);
 });
 
-test("only the owner's posts are knitted", () => {
-  const refs = knit(harvest([msg("500", "11", "https://suno.com/song/z", { author: "someone-else" })]));
-  assert.equal(refs.records.length, 0);
+test("a chosen locker lands whole, whoever posted; an unchosen one never does", () => {
+  const h = harvest([msg("500", "11", "https://suno.com/song/z", { author: "someone-else" })]);
+  assert.equal(knit(h, { only: ["Autumn's Locker"] }).records.length, 1);
+  assert.equal(knit(h, { only: ["Someone Else's Locker"] }).records.length, 0);
+});
+
+test("the table of contents is projects and their header posts, nothing past the header", () => {
+  const h = harvest([
+    msg("11", "11", "https://suno.com/song/a", { attachments: [{ url: "https://cdn.discordapp.com/a/1/art.png", filename: "art.png" }] }),
+    msg("1100", "11", verse(1)),
+    msg("1101", "11", "https://udio.com/songs/later"),
+    msg("1200", "12", "a reply, the header was never harvested"),
+  ]);
+  const [music, personas] = toc(h);
+  assert.deepEqual([music.name, personas.name], ["music", "personas"]);
+  const [exit, split] = music.entries;
+  assert.deepEqual([exit.title, exit.header, exit.replies], ["Your Body: Exit", "11", 2]);
+  assert.equal(exit.cover, "https://cdn.discordapp.com/a/1/art.png");
+  assert.deepEqual(exit.sources.map(s => s.platform), ["suno"]);
+  assert.deepEqual([split.title, split.header, split.replies], ["Split Song", null, 1]);
+  assert.equal(knit(h).records.find(r => r.id === "11").header, "11");
+  assert.equal(toc(h, { suppress: ["Autumn's Locker/personas"] }).length, 1);
 });
 
 test("an album control post orders forum posts; render links them", () => {

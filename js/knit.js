@@ -97,19 +97,54 @@ export function named(harvest, names = {}) {
   return { ...harvest, channels };
 }
 
+// A locker chosen is a locker owned, wholesale: what lands is decided by place alone.
+function inScope(harvest, config) {
+  return channel => {
+    if (!harvest.channels[channel]?.guild) return false;
+    const where = ancestry(harvest, channel);
+    if (config.only?.length && !config.only.some(r => matches(r, where))) return false;
+    return !(config.suppress || []).some(r => matches(r, where));
+  };
+}
+
+// The table of contents: each project (a forum) and its entries (posts), read from
+// structure and header posts alone. A header is the post's opening message, whose id
+// is the thread's; everything after it can wait.
+export function toc(harvest, config = {}) {
+  harvest = named(harvest, config.names);
+  const ok = inScope(harvest, config);
+  const byId = new Map(harvest.messages.map(m => [m.id, m]));
+  const replies = new Map();
+  for (const m of harvest.messages) if (m.id !== m.channel) replies.set(m.channel, (replies.get(m.channel) || 0) + 1);
+  for (const c of Object.values(harvest.channels)) if (c.replies != null) replies.set(c.id, Math.max(c.replies, replies.get(c.id) || 0));
+  const projects = new Map();
+  for (const c of Object.values(harvest.channels)) {
+    if (c.type === "forum" && ok(c.id)) projects.set(c.id, { id: c.id, name: c.name, locker: ancestry(harvest, c.id).names[0], entries: [] });
+  }
+  for (const c of Object.values(harvest.channels)) {
+    if (c.type !== "forum_post" || !projects.has(c.parent) || !ok(c.id)) continue;
+    const header = byId.get(c.id);
+    projects.get(c.parent).entries.push({
+      id: c.id,
+      title: c.name,
+      header: header ? c.id : null,
+      cover: header ? images(header)[0] || media(header).find(h => h.thumbnail)?.thumbnail || null : null,
+      sources: header ? media(header).map(h => ({ platform: h.platform, url: h.url, ...(h.title && { label: h.title }) })) : [],
+      replies: replies.get(c.id) || 0,
+      link: deepLink(harvest, c.id),
+    });
+  }
+  return [...projects.values()].map(p => ({ ...p, entries: p.entries.sort((a, b) => older(a.id, b.id)) }));
+}
+
 const pointers = r => [...(r.sources || []), ...(r.lyrics || []), r.cover, ...(r.tracks || [])].filter(Boolean);
 
 export function knit(harvest, config = {}, previous = null) {
   harvest = named(harvest, config.names);
   const owner = config.owner || harvest.owner?.id;
-  const allowed = m => {
-    const where = ancestry(harvest, m.channel);
-    if (!harvest.channels[m.channel]?.guild) return false;
-    if (config.only?.length && !config.only.some(r => matches(r, where))) return false;
-    return !(config.suppress || []).some(r => matches(r, where));
-  };
+  const ok = inScope(harvest, config);
   const mine = harvest.messages
-    .filter(m => (!owner || m.author === owner) && allowed(m))
+    .filter(m => ok(m.channel))
     .sort((a, b) => older(a.id, b.id));
   const byId = new Map(mine.map(m => [m.id, m]));
   const controls = mine.map(control).filter(Boolean);
@@ -169,6 +204,7 @@ export function knit(harvest, config = {}, previous = null) {
     const msgs = unit.messages.filter(m => !dropped.has(m.id));
     const o = overrides.get(unit.id) || {};
     const record = { id: unit.id, channel: unit.channel, kind: "track", by: Object.keys(o).length ? "control" : "auto" };
+    if (msgs.some(m => m.id === unit.id)) record.header = unit.id;
     if (o.title) record.title = o.title;
 
     const sources = msgs.filter(m => media(m).length).map(m => m.id);
@@ -192,9 +228,11 @@ export function knit(harvest, config = {}, previous = null) {
       }
     } else record.lyrics = null;
 
+    const unseen = (harvest.channels[unit.id]?.replies || 0) > msgs.length - 1;
     if (!record.sources.length) {
       record.kind = "post";
-      flag(unit.id, "no media in this post", "link one with `locker: sources`, `locker: skip` it, or suppress its forum", "locker: skip");
+      if (unseen) flag(unit.id, "only the header is here so far; what follows it is not harvested yet");
+      else flag(unit.id, "no media in this post", "link one with `locker: sources`, `locker: skip` it, or suppress its forum", "locker: skip");
     }
     for (const id of [...record.sources, ...(record.lyrics || []), record.cover].filter(Boolean))
       if (!byId.has(id)) flag(unit.id, `control post points at ${id}, which is not in this harvest`);

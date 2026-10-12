@@ -1,50 +1,50 @@
 {
-  "owner": "106584132900941824",
-  "knitted_at": "2026-10-01T00:00:00.000Z",
+  "owner": null,
+  "knitted_at": "2026-03-01T00:00:00.000Z",
   "config": {
     "only": [
-      "Autumn's Locker"
+      "Autuonomy Locker"
     ],
-    "suppress": []
+    "suppress": [],
+    "names": {}
   },
   "records": [
     {
-      "id": "1508000020971520000",
-      "channel": "1508000020971520000",
-      "kind": "track",
-      "by": "auto",
-      "sources": [
-        "1508000041943040000"
-      ],
-      "cover": null,
-      "lyrics": null
-    },
-    {
-      "id": "1508000025165824000",
-      "channel": "1508000025165824000",
-      "kind": "track",
-      "by": "auto",
-      "sources": [
-        "1508000050331648000",
-        "1508000058720256000"
-      ],
-      "cover": null,
-      "lyrics": null
-    },
-    {
-      "id": "1508000033554432000",
-      "channel": "1508000033554432000",
+      "id": "1456173073827889162",
+      "channel": "1456173073827889162",
       "kind": "post",
       "by": "auto",
+      "header": "1456173073827889162",
       "sources": [],
       "cover": null,
       "lyrics": null
     },
     {
-      "id": "1508000037748736000",
-      "channel": "1508000037748736000",
+      "id": "1457118695384944858",
+      "channel": "1457118695384944858",
       "kind": "post",
       "by": "auto",
+      "header": "1457118695384944858",
+      "sources": [],
+      "cover": null,
+      "lyrics": null
+    },
+    {
+      "id": "1457120016196702319",
+      "channel": "1457120016196702319",
+      "kind": "post",
+      "by": "auto",
+      "header": "1457120016196702319",
+      "sources": [],
+      "cover": null,
+      "lyrics": null
+    },
+    {
+      "id": "1457128454704201849",
+      "channel": "1457128454704201849",
+      "kind": "post",
+      "by": "auto",
+      "header": "1457128454704201849",
       "sources": [],
       "cover": null,
       "lyrics": null
@@ -52,19 +52,20 @@
   ],
   "unmatched": [
     {
-      "id": "1508000025165824000",
-      "reason": "lyrics are split across 2 posts with other posts between them",
-      "hint": "post `locker: lyrics` followed by their message links, in the order they should read"
+      "id": "1456173073827889162",
+      "reason": "only the header is here so far; what follows it is not harvested yet"
     },
     {
-      "id": "1508000033554432000",
-      "reason": "no media in this post",
-      "hint": "link one with `locker: sources`, `locker: skip` it, or suppress its forum"
+      "id": "1457118695384944858",
+      "reason": "only the header is here so far; what follows it is not harvested yet"
     },
     {
-      "id": "1508000037748736000",
-      "reason": "no media in this post",
-      "hint": "link one with `locker: sources`, `locker: skip` it, or suppress its forum"
+      "id": "1457120016196702319",
+      "reason": "only the header is here so far; what follows it is not harvested yet"
+    },
+    {
+      "id": "1457128454704201849",
+      "reason": "only the header is here so far; what follows it is not harvested yet"
     }
   ],
   "new": [],
