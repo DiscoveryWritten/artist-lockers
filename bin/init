@@ -1,0 +1,2 @@
+#!/bin/bash
+uv run bin/cli.py sync --init "$1"

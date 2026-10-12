@@ -41,6 +41,7 @@ jobs:
           cat > _config_prod.yml << EOF
           title: ${{ vars.SITE_TITLE }}
           oauth_client_id: ${{ vars.DISCORD_OAUTH_CLIENT_ID }}
+          pinata_gateway: ${{ vars.PINATA_GATEWAY }}
           EOF
       - name: Build with Jekyll
         run: bundle exec jekyll build --config _config.yml,_config_prod.yml
