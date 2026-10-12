@@ -90,6 +90,32 @@ button:hover { background: oklab(48% 0 0); }
 .tree input:disabled ~ span { opacity: .4; }
 
 #queue { padding-left: 1.25rem; margin: .5rem 0 0; }
+#queue .post {
+  display: flex;
+  align-items: flex-start;
+  gap: .5rem;
+  margin-top: .3rem;
+
+  pre {
+    flex: 1;
+    min-width: 0;
+    overflow-x: auto;
+    margin: 0;
+    padding: .4rem .6rem;
+    background: oklab(20% 0 0);
+    border-radius: .4rem;
+    font-size: .75rem;
+  }
+}
+.tree input.name {
+  font: inherit;
+  background: oklab(20% 0 0);
+  color: var(--ink);
+  border: 1px solid oklab(40% 0 0);
+  border-radius: .3rem;
+  padding: .05rem .4rem;
+  width: 11rem;
+}
 #queue li { margin-block: .4rem; }
 #queue .new::marker { color: var(--new); }
 #queue .gone::marker { color: var(--warn); }

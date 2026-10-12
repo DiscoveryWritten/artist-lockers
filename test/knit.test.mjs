@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
-import { knit, render, control } from "../js/knit.js";
+import { knit, render, control, pages } from "../js/knit.js";
 import { fromLegacyRefs, fromDataPackage } from "../js/harvest.js";
 
 const ME = "106584132900941824";
@@ -162,4 +162,29 @@ test("zip: what the page hands back opens again, names and all", async () => {
   const back = await entries(zip(files));
   assert.deepEqual(back.paths, files.map(f => f.path));
   assert.equal(await back.read(files[0].path), files[0].text);
+});
+
+test("each fixable item carries the control post that fixes it, links in posting order", () => {
+  const refs = knit(harvest([
+    msg("900", "12", "https://suno.com/song/x"),
+    msg("901", "12", verse(1)),
+    msg("902", "12", "https://udio.com/songs/y"),
+    msg("903", "12", verse(2)),
+    msg("904", "13", verse(3)),
+  ]));
+  const [split, words] = refs.unmatched;
+  assert.equal(split.post, "locker: lyrics\nhttps://discord.com/channels/1/12/901\nhttps://discord.com/channels/1/12/903");
+  assert.equal(words.post, "locker: skip");
+  const queue = render(refs, harvest([])).find(f => f.path === "_unmatched.md");
+  assert.ok(queue);
+});
+
+test("names the owner gives replace numbers, in the tree's paths and on the pages", () => {
+  const h = harvest([msg("950", "11", "https://suno.com/song/a")]);
+  h.channels["10"].name = "10";
+  const refs = knit(h, { suppress: ["Autumn's Locker/songs/nothing"], names: { 10: "songs" } });
+  assert.deepEqual(refs.config.names, { 10: "songs" });
+  assert.equal(pages(refs, h)[0].place, "songs");
+  assert.equal(pages(refs, h)[0].path, "autumn-s-locker/songs/your-body-exit.md");
+  assert.equal(knit(h, { suppress: ["Autumn's Locker/songs"], names: { 10: "songs" } }).records.length, 0);
 });

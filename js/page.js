@@ -70,8 +70,11 @@ function drawTree() {
   const on = name => had?.only?.length ? had.only.includes(name) : /locker/i.test(name) || lockers.size === 1;
   const kept = id => !had?.suppress?.includes(id);
   const count = n => h("small", {}, ` ${n.media} with media, ${n.posts} posts`);
+  const unnamed = name => /^\d{15,}$/.test(name);
   const box = (rule, checked, name, n, level) =>
-    h("label", {}, h("input", { type: "checkbox", "data-rule": rule, "data-level": level, checked }), " ", h("span", {}, name), count(n));
+    h("label", {}, h("input", { type: "checkbox", "data-rule": rule, "data-level": level, checked }), " ",
+      unnamed(name) ? h("input", { type: "text", class: "name", "data-name": rule, value: had?.names?.[rule] || "", placeholder: "name this forum" })
+        : h("span", {}, name), count(n));
 
   const tree = h("ul", { class: "tree" }, [...lockers].sort().map(([name, locker]) =>
     h("li", {}, box(name, on(name), name, locker, "locker"),
@@ -85,16 +88,17 @@ function drawTree() {
 }
 
 function choices() {
-  const only = [], suppress = [];
+  const only = [], suppress = [], names = { ...state.previous?.config?.names };
+  for (const i of $("#tree").querySelectorAll("[data-name]")) i.value.trim() ? (names[i.dataset.name] = i.value.trim()) : delete names[i.dataset.name];
   for (const locker of $("#tree").querySelectorAll(":scope > ul > li")) {
     const lockerBox = locker.querySelector("input");
-    const inner = [...locker.querySelectorAll(":scope ul input")];
+    const inner = [...locker.querySelectorAll(":scope ul input[type=checkbox]")];
     inner.forEach(i => (i.disabled = !lockerBox.checked));
     if (!lockerBox.checked) continue;
     only.push(lockerBox.dataset.rule);
-    for (const i of inner) if (!i.checked) suppress.push(i.dataset.rule);
+    for (const i of inner) if (i.type === "checkbox" && !i.checked) suppress.push(i.dataset.rule);
   }
-  return { only, suppress };
+  return { only, suppress, names };
 }
 
 // ----------------------------------------------------------------- knit --
@@ -110,7 +114,8 @@ function reknit() {
 
 function drawQueue(q) {
   const items = [
-    ...q.unmatched.map(u => h("li", {}, h("a", { href: u.link, target: "_blank" }, u.title), ` ${u.reason}`, u.hint ? h("br") : null, u.hint ? h("small", {}, ticks(u.hint)) : null)),
+    ...q.unmatched.map(u => h("li", {}, h("a", { href: u.link, target: "_blank" }, u.title), ` ${u.reason}`, u.hint ? h("br") : null, u.hint ? h("small", {}, ticks(u.hint)) : null,
+      u.post ? h("div", { class: "post" }, h("pre", {}, u.post), h("button", { type: "button", "data-post": u.post }, "copy")) : null)),
     ...q.new.map(n => h("li", { class: "new" }, "new ", n.what, ": ", h("a", { href: n.link, target: "_blank" }, n.title))),
     ...q.gone.map(g => h("li", { class: "gone" }, `gone ${g.what}: `, h("a", { href: g.link, target: "_blank" }, g.id))),
   ];
@@ -173,6 +178,11 @@ document.addEventListener("DOMContentLoaded", () => {
     gather([new File([harvest], "harvest.json")]);
   });
   $("#download").addEventListener("click", download);
+  $("#queue").addEventListener("click", async e => {
+    const button = e.target.closest("[data-post]");
+    if (!button) return;
+    await navigator.clipboard.writeText(button.dataset.post).then(() => (button.textContent = "copied"), () => (button.textContent = "select and copy"));
+  });
   drop.addEventListener("dragover", e => { e.preventDefault(); drop.classList.add("over"); });
   drop.addEventListener("dragleave", () => drop.classList.remove("over"));
   drop.addEventListener("drop", e => { e.preventDefault(); drop.classList.remove("over"); gather(e.dataTransfer.files); });

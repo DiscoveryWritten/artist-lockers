@@ -88,9 +88,19 @@ function matches(rule, where) {
   return path === want || path.startsWith(want + "/");
 }
 
+// Names the owner gave: a data package knows its forums only by number.
+export function named(harvest, names = {}) {
+  if (!Object.keys(names).length) return harvest;
+  const channels = {};
+  for (const [id, c] of Object.entries(harvest.channels))
+    channels[id] = { ...c, name: names[id] || c.name, guild: c.guild && { ...c.guild, name: names[c.guild.id] || c.guild.name } };
+  return { ...harvest, channels };
+}
+
 const pointers = r => [...(r.sources || []), ...(r.lyrics || []), r.cover, ...(r.tracks || [])].filter(Boolean);
 
 export function knit(harvest, config = {}, previous = null) {
+  harvest = named(harvest, config.names);
   const owner = config.owner || harvest.owner?.id;
   const allowed = m => {
     const where = ancestry(harvest, m.channel);
@@ -119,7 +129,8 @@ export function knit(harvest, config = {}, previous = null) {
   }
 
   const unmatched = [];
-  const flag = (id, reason, hint) => unmatched.push({ id, reason, ...(hint && { hint }) });
+  const flag = (id, reason, hint, post) => unmatched.push({ id, reason, ...(hint && { hint }), ...(post && { post }) });
+  const post = (verb, ids) => [`locker: ${verb}`, ...ids.map(id => deepLink(harvest, byId.get(id)?.channel || id, byId.has(id) ? id : null))].join("\n");
   const records = new Map();
   const albums = [];
   const skipped = new Set();
@@ -163,7 +174,8 @@ export function knit(harvest, config = {}, previous = null) {
     const sources = msgs.filter(m => media(m).length).map(m => m.id);
     record.sources = o.sources || sources;
     for (const id of sources)
-      if (!record.sources.includes(id)) flag(id, "media not placed by the sources control post", "add its link to `locker: sources`, or `locker: skip` it");
+      if (!record.sources.includes(id)) flag(id, "media not placed by the sources control post", "add its link to `locker: sources`, or `locker: skip` it",
+        post("sources", [...record.sources, id]));
 
     record.cover = o.cover !== undefined ? o.cover : msgs.find(m => images(m).length)?.id || null;
 
@@ -176,13 +188,13 @@ export function knit(harvest, config = {}, previous = null) {
       else {
         record.lyrics = null;
         flag(unit.id, `lyrics are split across ${lyrical.length} posts with other posts between them`,
-          "post `locker: lyrics` followed by their message links, in the order they should read");
+          "post `locker: lyrics` followed by their message links, in the order they should read", post("lyrics", lyrical));
       }
     } else record.lyrics = null;
 
     if (!record.sources.length) {
       record.kind = "post";
-      flag(unit.id, "no media in this post", "link one with `locker: sources`, `locker: skip` it, or suppress its forum");
+      flag(unit.id, "no media in this post", "link one with `locker: sources`, `locker: skip` it, or suppress its forum", "locker: skip");
     }
     for (const id of [...record.sources, ...(record.lyrics || []), record.cover].filter(Boolean))
       if (!byId.has(id)) flag(unit.id, `control post points at ${id}, which is not in this harvest`);
@@ -210,7 +222,7 @@ export function knit(harvest, config = {}, previous = null) {
   return {
     owner: owner || null,
     knitted_at: new Date().toISOString(),
-    config: { only: config.only || [], suppress: config.suppress || [] },
+    config: { only: config.only || [], suppress: config.suppress || [], names: config.names || {} },
     records: all,
     unmatched,
     new: fresh,
@@ -229,6 +241,7 @@ const yaml = v => JSON.stringify(v);
 
 // What a page holds, before it is markdown. The browser previews these.
 export function pages(refs, harvest, local = {}) {
+  harvest = named(harvest, refs.config?.names);
   const byId = new Map(harvest.messages.map(m => [m.id, m]));
   const used = new Set();
   const out = new Map();
@@ -281,6 +294,7 @@ export function pages(refs, harvest, local = {}) {
 
 // The owner's work queue, every line with somewhere to go and fix it.
 export function queue(refs, harvest, list = pages(refs, harvest)) {
+  harvest = named(harvest, refs.config?.names);
   const byId = new Map(harvest.messages.map(m => [m.id, m]));
   const titles = new Map(list.map(p => [p.id, p.title]));
   const at = (id, channel) => {
@@ -330,7 +344,8 @@ export function render(refs, harvest, local = {}) {
       "The work queue. Each line is something the knitter would not guess at.",
       "Fix it in Discord with a control post, re-harvest, re-knit.",
       "",
-      ...q.unmatched.map(u => `- [ ] [${u.title}](${u.link}) ${u.reason}${u.hint ? `\n  - ${u.hint}` : ""}`),
+      ...q.unmatched.map(u => `- [ ] [${u.title}](${u.link}) ${u.reason}${u.hint ? `\n  - ${u.hint}` : ""}` +
+        (u.post ? `\n\n  \`\`\`\n${u.post.replace(/^/gm, "  ")}\n  \`\`\`` : "")),
       ...(q.new.length ? ["", `## New since the last knit (${q.new.length})`, "",
         ...q.new.map(n => `- [${n.title}](${n.link}) new ${n.what}`)] : []),
       ...(q.gone.length ? ["", `## Gone since the last knit (${q.gone.length})`, "",
