@@ -73,15 +73,11 @@ wants:
       claim to hold rather than only to point
     lifecycle: durable
     disposition: on-request
-    # DOES NOT EXIST YET, and it is the one label worth wanting residency for.
-    # Today the bytes live in exactly two places, and a person controls neither:
-    # a third-party pinning service, and the reader's own OPFS — which is
-    # origin-private, per-device and unexportable, so the most durable artifact
-    # this project produces is the one nobody can hand to anybody.
-    #
-    # A host that binds this label can keep the copies with or WITHOUT IPFS, which
-    # is the whole point: the pinning layer stops being the durability story and
-    # becomes one way to distribute it.
+    # The pinning service is gone. `bin/knit.mjs --fetch` pulls an owner's own
+    # attachments into their own output folder while the harvest's URLs are
+    # fresh, so the copy lives with the person whose work it is. A host that
+    # binds this label is holding that folder for them, not a catalogue of
+    # everybody.
 
   - label: scratch
     holds: >

@@ -1,18 +1,14 @@
 import argparse
 import asyncio
-import json
 import logging
-from pathlib import Path
 import re
 import sys
-import time
 
 import discord
 
 import bookmarks
 import bootstrap
 import exporter
-import decent
 import refresh
 import scanner
 
@@ -127,73 +123,9 @@ refresh_parser.add_argument(
 )
 
 
-async def run_pin(args, client) -> None:
-    await client.wait_until_ready()
-    await client.close()
-    deadline = time.monotonic() + args.budget
-    total_pinned = 0
-
-    for refs_path in decent.refs_paths():
-        if time.monotonic() >= deadline:
-            logger.info("Budget exhausted after %d pins", total_pinned)
-            break
-
-        with open(refs_path, encoding="utf-8") as f:
-            payload = json.load(f)
-
-        links = payload.get("links", [])
-        dirty = False
-
-        for entry in links:
-            if time.monotonic() >= deadline:
-                break
-            if not decent.needs_pin(entry):
-                continue
-
-            url = entry["url"]
-            filename = entry.get("attachment", {}).get("filename", "file")
-            mime_type = entry.get("attachment", {}).get(
-                "content_type", "application/octet-stream"
-            )
-            name = f"{entry['message']['id']}_{filename}"
-
-            local_path = decent.fetch_to_temp(url)
-            if not local_path:
-                continue
-
-            try:
-                if cid := decent.pin(local_path, mime_type, name):
-                    entry["ipfs_cid"] = cid
-                    total_pinned += 1
-                    dirty = True
-                    logger.info("Pinned %s -> %s", name, cid)
-            finally:
-                Path(local_path).unlink(missing_ok=True)
-
-        if dirty:
-            with open(refs_path, "w", encoding="utf-8") as f:
-                json.dump(payload, f, indent=2, ensure_ascii=False)
-            logger.info("Updated %s", refs_path)
-
-    logger.info("Pin job complete: %d pinned", total_pinned)
-
-
-PIN = "pin"
-pin_parser = subparsers.add_parser(
-    PIN, help="Upload unpinned attachments to IPFS")
-pin_parser.add_argument(
-    "--budget",
-    metavar="SECONDS",
-    type=float,
-    default=300.0,
-    help="Time budget for uploading in seconds (default: 300)",
-)
-
-
 commands = {
     SYNC: run_sync,
     REFRESH: run_refresh,
-    PIN: run_pin,
 }
 
 

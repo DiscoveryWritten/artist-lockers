@@ -1,4 +1,3 @@
 #!/bin/bash
 bin/init "$1"
 bin/sync
-bin/pin

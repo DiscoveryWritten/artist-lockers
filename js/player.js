@@ -58,33 +58,6 @@ async function acquireBlob(record) {
     // not cached
   }
 
-  // check decentralized
-  if (record.cid) {
-    try {
-      const res = await fetch(`https://{{ site.pinata_gateway }}/ipfs/${record.cid}`);
-      if (!res.ok) throw new Error(`IPFS fetch failed: ${res.status}`);
-      const buffer = await res.arrayBuffer();
-      await writeToOPFS(key, buffer);
-      return URL.createObjectURL(
-        new Blob([buffer], { type: record.content_type })
-      );
-    } catch (e) {
-      console.warn('IPFS fetch failed, falling back to CDN:', e);
-    }
-  }
-
   // use discord CDN. this is will not work after the cdn url's expiration
   return record.cdn;
-}
-
-async function writeToOPFS(key, buffer) {
-  try {
-    const root = await navigator.storage.getDirectory();
-    const file = await root.getFileHandle(key, { create: true });
-    const writable = await file.createWritable();
-    await writable.write(buffer);
-    await writable.close();
-  } catch (e) {
-    console.warn('OPFS write failed:', e);
-  }
 }
