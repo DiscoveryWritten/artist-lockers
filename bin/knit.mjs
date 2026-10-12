@@ -6,6 +6,9 @@
 // SOURCE is an unzipped Discord data package, a harvest.json, or a refs.json
 // from the old bot. --only and --suppress take ids or paths like
 // "Autumn's Locker/music"; locker.json may hold {owner, only, suppress}.
+//
+// The refs.json already in --out is the bookmark: whatever this harvest
+// holds that it did not point at is reported new.
 
 import { readFile, writeFile, mkdir, readdir, stat, access } from "node:fs/promises";
 import { join, dirname, relative } from "node:path";
@@ -55,7 +58,9 @@ if (!positionals.length) {
 }
 
 const harvest = merge(await Promise.all(positionals.map(harvestFrom)));
-const refs = knit(harvest, config);
+const last = join(opt.out, "refs.json");
+const previous = await readFile(last, "utf8").then(JSON.parse, () => null);
+const refs = knit(harvest, config, previous);
 
 const expired = url => {
   const ex = new URL(url).searchParams.get("ex");
@@ -92,5 +97,6 @@ for (const file of render(refs, harvest, local)) {
 }
 
 const tracks = refs.records.filter(r => r.kind !== "album").length;
-console.log(`${harvest.messages.length} messages -> ${tracks} records, ${refs.unmatched.length} unmatched` +
+console.log(`${harvest.messages.length} messages -> ${tracks} records, ${refs.unmatched.length} unmatched, ` +
+  (previous ? `${refs.new.length} new, ${refs.gone.length} gone` : "first knit") +
   (opt.fetch ? `, ${fetched} fetched` : "") + ` -> ${opt.out}/`);

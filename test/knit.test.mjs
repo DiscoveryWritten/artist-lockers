@@ -137,3 +137,21 @@ test("a Discord data package: snowflakes survive, DMs never enter, CSV and JSON 
   const refs = knit(h);
   assert.deepEqual(refs.records.map(r => r.id).sort(), ["1507612124317483139", "1507819507702300824"]);
 });
+
+test("refs are the bookmark: what the last refs did not point at is new, what they did and is missing is gone", () => {
+  const first = harvest([msg("800", "11", "https://suno.com/song/a"), msg("801", "13", "https://suno.com/song/w")]);
+  const before = knit(first);
+  assert.deepEqual([before.new, before.gone], [[], []]);
+
+  const second = harvest([
+    msg("800", "11", "https://suno.com/song/a"),
+    msg("802", "11", "https://udio.com/songs/b"),
+    msg("803", "12", "https://suno.com/song/c"),
+  ]);
+  const after = knit(second, {}, before);
+  assert.deepEqual(after.new, [{ id: "802", what: "media", record: "11" }, { id: "12", what: "post" }]);
+  assert.deepEqual(after.gone.map(g => g.id), ["13"]);
+  const queue = render(after, second).find(f => f.path === "_unmatched.md").text;
+  assert.match(queue, /## New since the last knit \(2\)/);
+  assert.match(queue, /\[Your Body: Exit\]\(.*\/11\/802\) new media/);
+});

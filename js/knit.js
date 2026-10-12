@@ -3,6 +3,9 @@
 // A harvest is one owner's own messages, however they were gathered.
 // Refs are a map of pointers into a harvest, never a copy of it, so a
 // re-harvest after an edit re-renders without the map moving.
+//
+// Refs are also the bookmark. Whatever a new harvest holds that the last
+// refs did not point at is new; nothing has to keep reading to find it.
 
 const MEDIA = /https?:\/\/(?:[\w-]+\.)*(suno|udio|youtube|youtu|soundcloud|spotify|bandcamp)\.[a-z]+\/[^\s<>]+/gi;
 const LINK = /https?:\/\/(?:\w+\.)?discord(?:app)?\.com\/channels\/(\d+|@me)\/(\d+)(?:\/(\d+))?/g;
@@ -85,7 +88,9 @@ function matches(rule, where) {
   return path === want || path.startsWith(want + "/");
 }
 
-export function knit(harvest, config = {}) {
+const pointers = r => [...(r.sources || []), ...(r.lyrics || []), r.cover, ...(r.tracks || [])].filter(Boolean);
+
+export function knit(harvest, config = {}, previous = null) {
   const owner = config.owner || harvest.owner?.id;
   const allowed = m => {
     const where = ancestry(harvest, m.channel);
@@ -188,11 +193,27 @@ export function knit(harvest, config = {}) {
     for (const t of album.tracks)
       if (!records.has(t)) flag(album.id, `album track ${t} is not a record`, "link the forum post itself, not a message in it");
 
+  const all = [...records.values(), ...albums];
+  const fresh = [];
+  const gone = [];
+  if (previous) {
+    const had = new Set(previous.records.map(r => r.id));
+    const seen = new Set(previous.records.flatMap(pointers));
+    for (const r of all) {
+      if (!had.has(r.id)) fresh.push({ id: r.id, what: r.kind === "album" ? "album" : "post" });
+      else for (const id of r.sources || []) if (!seen.has(id)) fresh.push({ id, what: "media", record: r.id });
+    }
+    const now = new Set(all.map(r => r.id));
+    for (const r of previous.records) if (!now.has(r.id)) gone.push({ id: r.id, what: r.kind, channel: r.channel });
+  }
+
   return {
     owner: owner || null,
     knitted_at: new Date().toISOString(),
-    records: [...records.values(), ...albums],
+    records: all,
     unmatched,
+    new: fresh,
+    gone,
   };
 }
 
@@ -275,6 +296,11 @@ export function render(refs, harvest, local = {}) {
     text: ["---", "title: Locker", "---", "", ...index.map(p => `- [${p.title}](${p.path})`), ""].join("\n"),
   });
 
+  const at = (id, channel) => {
+    const m = byId.get(id);
+    return m ? deepLink(harvest, m.channel, m.id) : deepLink(harvest, harvest.channels[id] ? id : channel || id);
+  };
+  const name = id => pages.get(id)?.title || id;
   files.push({
     path: "_unmatched.md",
     text: [
@@ -283,11 +309,12 @@ export function render(refs, harvest, local = {}) {
       "The work queue. Each line is something the knitter would not guess at.",
       "Fix it in Discord with a control post, re-harvest, re-knit.",
       "",
-      ...refs.unmatched.map(u => {
-        const m = byId.get(u.id);
-        const link = m ? deepLink(harvest, m.channel, m.id) : deepLink(harvest, u.id);
-        return `- [ ] [${u.id}](${link}) ${u.reason}${u.hint ? `\n  - ${u.hint}` : ""}`;
-      }),
+      ...refs.unmatched.map(u => `- [ ] [${u.id}](${at(u.id)}) ${u.reason}${u.hint ? `\n  - ${u.hint}` : ""}`),
+      ...((refs.new || []).length ? ["", `## New since the last knit (${refs.new.length})`, "",
+        ...refs.new.map(n => `- [${name(n.record || n.id)}](${at(n.id)}) new ${n.what}`)] : []),
+      ...((refs.gone || []).length ? ["", `## Gone since the last knit (${refs.gone.length})`, "",
+        "Deleted in Discord, suppressed, or missing from this harvest.", "",
+        ...refs.gone.map(g => `- [${g.id}](${at(g.id, g.channel)}) ${g.what}`)] : []),
       "",
     ].join("\n"),
   });
